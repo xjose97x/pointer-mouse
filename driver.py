@@ -15,39 +15,16 @@ def kalmanFilter(data,preData,var,Q):
     preData = outputData
     return (outputData,var)
 
-def leftClick():
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-
-def rightClick():
-    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN,0,0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP,0,0)
-
 if __name__ == '__main__':
-    s = serial.Serial(sys.argv[1])
-    # command line input should be as the following format
-    # python driver.py [serial port number] [cursor move speed] [threshhold for moving] [damp rate] [Q] [R]
-    # python driver.py COM3 20 0.4 0.8 0.1 0.25
-    if len(sys.argv) >= 3:
-        v = int(sys.argv[2])
-    else:
-        v = 20
-    if len(sys.argv) >= 4:
-        Thresh = float(sys.argv[3])
-    else:
-        Thresh = 0.4
-    if len(sys.argv) >= 5:
-        dampRate = float(sys.argv[4])
-    else:
-        dampRate = 0.8
+    s = serial.Serial(sys.argv[1] if len(sys.argv) >= 3 else 'COM3')
+    cursor_speed =  int(sys.argv[2]) if len(sys.argv) >= 3 else 20
+    moving_threshold = float(sys.argv[3]) if len(sys.argv) >= 4 else 0.4
+    damp_rate = float(sys.argv[4]) if len(sys.argv) >= 5 else 0.8
+    Q = float(sys.argv[5]) if len(sys.argv) >= 6 else 0.1
 
     # initialization for kalman filter
     preData = 0
     var = 0
-    if len(sys.argv) >= 6:
-        Q = float(sys.argv[5])
-    else:
-        Q = 0.1
 
     xPreData = 0
     yPreData = 0
@@ -99,14 +76,14 @@ if __name__ == '__main__':
             ax, xVar = kalmanFilter(ax,xPreData,xVar,Q)
             ay, yVar = kalmanFilter(ay,yPreData,yVar,Q)
             # damp the speed
-            vx = vx * dampRate
-            vy = vy * dampRate
+            vx = vx * damp_rate
+            vy = vy * damp_rate
             # change the speed if the acceleration exceed the threshhold
-            if abs(ax) > Thresh:
-                dvx = np.exp(-abs(vx)) * ax * v
+            if abs(ax) > moving_threshold:
+                dvx = np.exp(-abs(vx)) * ax * cursor_speed
                 vx = vx + dvx
-            if abs(ay) > Thresh:
-                dvy = np.exp(-abs(vy)) * ay * v
+            if abs(ay) > moving_threshold:
+                dvy = np.exp(-abs(vy)) * ay * cursor_speed
                 vy = vy + dvy
             # update the position of the cursor
             pos = win32api.GetCursorPos()
